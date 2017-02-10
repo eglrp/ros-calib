@@ -459,12 +459,13 @@ def main():
     node = OpenCVCalibrationNode(boards, options.service_check, calib_flags, pattern, options.camera_name,
                                  checkerboard_flags=checkerboard_flags)
     #rospy.spin()
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture("GOPR0307.MP4")
     while True: #cv2.waitKey(10) != 27:
         ret_val, frame = cap.read()
         #if frame.emp
         #cv2.imshow("Test", frame)
-        node.q_mono.append(frame)
+        if ret_val:
+            node.q_mono.append(frame)
         #if cv2.waitKey(1) == 27:
             #break
 
