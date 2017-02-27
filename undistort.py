@@ -3,6 +3,7 @@
 import argparse
 import numpy
 import cv2
+import re
 
 class Undistorter:
     def set_alpha(self, a):
@@ -46,22 +47,25 @@ class Undistorter:
 
 def main():
     parser = argparse.ArgumentParser(description='Undistort camera images')
-    parser.add_argument('--txt', type=file, required=True, help='text calibration file')
-    parser.add_argument('-i', required=True, help='input image')
+    parser.add_argument('--txt', type=file, required=False, help='text calibration file')
+    parser.add_argument('-i', required=True, help='input image or video file name, or number of video device')
     parser.add_argument('-s', default=False, action='store_true', help='show image')
     parser.add_argument('-g', default=False, action='store_true', help='convert image to gray')
     parser.add_argument('-o', default="", help='output image')
 
+    und = None
     args = parser.parse_args()
-    txt = args.txt.read().splitlines()
-    und = Undistorter()
-    und.init(txt)
-    und.set_alpha(0)
+    textFile = args.txt
+    if textFile is not None:
+        und = Undistorter()
+        txt = textFile.read().splitlines()
+        und.init(txt)
+        und.set_alpha(0)
 
     def process(image, args, idx, wait):
         if (args.g):
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        rect = und.remap(image)
+        rect = image if und is None else und.remap(image)
         if args.o != "":
             cv2.imwrite(args.o % idx, rect)
         if args.s:
@@ -72,7 +76,10 @@ def main():
     if args.i.endswith(".png") or args.i.endswith(".jpg"):
         process(cv2.imread(args.i), args, idx, None)
     else:
-        vc = cv2.VideoCapture(args.i)
+        if re.match("^\d+$", args.i):
+            vc = cv2.VideoCapture(int(args.i))
+        else:
+            vc = cv2.VideoCapture(args.i)
         while True:
             ret_val, image = vc.read()
             if not ret_val:
